@@ -25,6 +25,15 @@ struct DbConfig
     QString password;
 };
 
+static void setupUtf8(QTextStream &stream)
+{
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
+    stream.setCodec("UTF-8");
+#else
+    Q_UNUSED(stream);
+#endif
+}
+
 // Подключение к БД
 bool initDb(QSqlDatabase &db, const DbConfig &cfg);
 
@@ -199,7 +208,7 @@ bool indexFile(QSqlDatabase &db, const QString &filePath)
     }
 
     QTextStream stream(&file);
-    stream.setCodec("UTF-8");
+    setupUtf8(stream);
 
     const QString text = stream.readAll();
     file.close();
@@ -250,7 +259,7 @@ bool indexFile(QSqlDatabase &db, const QString &filePath)
 
     QSqlQuery del(db);
 
-    sqlMessageTemp = "DELETE FROM word_frequencies WHERE document_id = " + static_cast<QString>(docId);
+    sqlMessageTemp = "DELETE FROM word_frequencies WHERE document_id = " + QString::number(docId);
 
     if (!del.exec(sqlMessageTemp))
     {
@@ -271,7 +280,7 @@ bool indexFile(QSqlDatabase &db, const QString &filePath)
         }
 
         sqlMessageTemp =  "INSERT INTO word_frequencies(document_id, word_id, frequency) \
-                          VALUES(" + static_cast<QString>(docId) + ", " + static_cast<QString>(wordId) + ", " +  static_cast<QString>(it.value()) + ") \
+                          VALUES(" + QString::number(docId) + ", " + QString::number(wordId) + ", " +  QString::number(it.value()) + ") \
                           ON CONFLICT (document_id, word_id )\
                           DO UPDATE SET frequency = EXCLUDED.frequency";
 
