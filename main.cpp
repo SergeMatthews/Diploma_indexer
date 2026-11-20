@@ -63,7 +63,7 @@ int main(int argc, char *argv[])
 
     QSettings settings(QString("indexer.ini"), QSettings::IniFormat);
 
-    QStringList directories;
+    QStringList directories = readDirectories(settings);
 
 
     if (directories.isEmpty())
@@ -114,39 +114,27 @@ bool initDb(QSqlDatabase &db, const DbConfig &cfg)
 
     QSqlQuery query(db);
 
-    std::vector<QString> sqlMessage;
+    QList<QString> sqlMessage = {
+            "CREATE TABLE IF NOT EXISTS documents ("
+            " id   SERIAL PRIMARY KEY,"
+            " path TEXT NOT NULL UNIQUE"
+            ")",
 
+            "CREATE TABLE IF NOT EXISTS words ("
+            " id   SERIAL PRIMARY KEY,"
+            " word TEXT NOT NULL UNIQUE"
+            ")",
 
-    sqlMessage.push_back( "CREATE TABLE IF NOT EXISTS documents ("
-                          " id   SERIAL PRIMARY KEY,"
-                          " path TEXT NOT NULL UNIQUE"
-                          ")"
-                             );
+            "CREATE TABLE IF NOT EXISTS word_frequencies ("
+            " document_id INTEGER NOT NULL REFERENCES documents(id) ON DELETE CASCADE,"
+            " word_id     INTEGER NOT NULL REFERENCES words(id)     ON DELETE CASCADE,"
+            " frequency   INTEGER NOT NULL,"
+            " PRIMARY KEY (document_id, word_id)"
+            ")",
 
-    sqlMessage.push_back(  "CREATE TABLE IF NOT EXISTS documents ("
-                           " id   SERIAL PRIMARY KEY,"
-                           " path TEXT NOT NULL UNIQUE"
-                           ")"
-                        );
-
-    sqlMessage.push_back(  "CREATE TABLE IF NOT EXISTS words ("
-                           " id   SERIAL PRIMARY KEY,"
-                           " word TEXT NOT NULL UNIQUE"
-                           ")"
-                        );
-
-    sqlMessage.push_back(   "CREATE TABLE IF NOT EXISTS word_frequencies ("
-                            " document_id INTEGER NOT NULL REFERENCES documents(id) ON DELETE CASCADE,"
-                            " word_id     INTEGER NOT NULL REFERENCES words(id)     ON DELETE CASCADE,"
-                            " frequency   INTEGER NOT NULL,"
-                            " PRIMARY KEY (document_id, word_id)"
-                            ")"
-                        );
-
-    sqlMessage.push_back(   "CREATE INDEX IF NOT EXISTS idx_word_frequencies_word_id "
-                            "ON word_frequencies(word_id)"
-                        );
-
+            "CREATE INDEX IF NOT EXISTS idx_word_frequencies_word_id "
+            "ON word_frequencies(word_id)"
+        };
 
     for (const QString &sql : sqlMessage)
     {
